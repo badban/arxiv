@@ -2,11 +2,10 @@
 # -*- coding: utf-8 -*-
 # badban@2016
 #共41956行 th29555行 ph12401行
-import pymongo
+
 import re
 
-
-from pymongo import MongoClient #删除重复内容
+from pymongo import MongoClient
 def deleteRepetition(mergeResult):
     dictTitle={}
     dictSummary={}
@@ -68,13 +67,45 @@ def addId(mergeResult):
     for item in mergeResult.find({}):
         _id=item['_id']
         id=_id[2:]
-        mergeResult.update({"_id":_id}, {"$set": {"id": id}})
+        mergeResult.update({"_id":_id}, {"$set": {"id": id.zfill(7)}})
 def addNeighbor(mergeResult,relation):
     for item in mergeResult.find({}):
         searchResult=relation.find_one({'_id':item['id']})
         if(searchResult):
             print('addnegibor:%s'%searchResult['_id'])
             mergeResult.update({"id":item['id']}, {'$set':{"neighbor":searchResult['neighbor']}})
+#通过txt文件加入关系
+def addNeighborByTxt(mergeResult):
+    with open('E:/code/arxivData/hepph/ph.txt')as phFile:
+        counter=1
+        for line in phFile.readlines():
+            if(counter>4):
+                list=line.split()
+                result=mergeResult.find_one({'id':list[0]})
+                neighbor=""
+                if(result!=None):
+                    if(result.get('neighbor')!=None):
+                        neighbor=result['neighbor']+","+"ph"+list[1]
+                    else:
+                        neighbor="ph"+list[1]
+                    print(list[0]+":"+neighbor)
+                    mergeResult.update({"id": list[0]}, {'$set': {"neighbor": neighbor}})
+            counter+=1
+    with open('E:/code/arxivData/hepth/th.txt')as thFile:
+        counter=1
+        for line in thFile.readlines():
+            if(counter>4):
+                list=line.split()
+                result=mergeResult.find_one({'id':list[0]})
+                neighbor=""
+                if(result!=None):
+                    if(result.get("neighbor")!=None):
+                        neighbor=result['neighbor']+","+"th"+list[1]
+                    else:
+                        neighbor="ph"+list[1]
+                    print(list[0]+":"+neighbor)
+                    mergeResult.update({"id": list[0]}, {'$set': {"neighbor": neighbor}})
+            counter+=1
 
 if __name__=="__main__":
     client = MongoClient('192.168.1.112', 27017)
@@ -93,5 +124,6 @@ if __name__=="__main__":
     #printCount(mergeResult)
     #添加neighbor
     #addNeighbor(mergeResult,relation)
-    #更新neighbor
+    #addNeighborByTxt(mergeResult)
+    # 更新neighbor
     updateNeighbor(mergeResult)
